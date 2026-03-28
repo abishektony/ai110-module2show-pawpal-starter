@@ -8,8 +8,10 @@ class Task:
     duration_minutes: int
     priority: int  # 1 = highest
     preferred_time: Optional[str] = None  # e.g. "morning", "evening"
+    time: Optional[str] = None  # e.g. "08:30" — used for chronological ordering
     is_required: bool = False
     completed: bool = False
+    recurrence: Optional[str] = None  # "daily", "weekly", or None
 
     def mark_complete(self) -> None:
         """Mark this task as completed."""
@@ -86,62 +88,3 @@ class DailyPlan:
         lines.append(f"\nReasoning: {self.reasoning}")
         return "\n".join(lines)
 
-
-@dataclass
-class Scheduler:
-    owner: Owner
-    pet: Pet
-
-    def schedule(self) -> DailyPlan:
-        """Build and return a DailyPlan by fitting prioritized tasks into available time."""
-        constraints = self.owner.get_constraints()
-        available = constraints["available_minutes"]
-
-        sorted_tasks = self._sort_by_priority(self.pet.tasks)
-        filtered_tasks = self._filter_by_time(sorted_tasks)
-
-        scheduled = []
-        skipped = []
-        time_used = 0
-
-        for task in filtered_tasks:
-            if time_used + task.duration_minutes <= available:
-                scheduled.append(task)
-                time_used += task.duration_minutes
-            else:
-                skipped.append(task)
-
-        reasoning = self.explain_plan(DailyPlan(scheduled, skipped, time_used))
-        return DailyPlan(scheduled, skipped, time_used, reasoning)
-
-    def fits_in_time(self, tasks: list[Task]) -> bool:
-        """Return True if the combined duration of tasks fits within available time."""
-        total = sum(t.duration_minutes for t in tasks)
-        return total <= self.owner.available_minutes
-
-    def explain_plan(self, plan: DailyPlan) -> str:
-        """Generate a plain-English explanation of what was scheduled and why."""
-        parts = [
-            f"Scheduled {len(plan.scheduled_tasks)} task(s) using "
-            f"{plan.total_minutes} of {self.owner.available_minutes} available minutes."
-        ]
-        if plan.skipped_tasks:
-            skipped_names = ", ".join(t.name for t in plan.skipped_tasks)
-            parts.append(f"Skipped due to time: {skipped_names}.")
-        parts.append("Tasks were ordered by priority, with required tasks given preference.")
-        return " ".join(parts)
-
-    def _sort_by_priority(self, tasks: list[Task]) -> list[Task]:
-        """Sort tasks by priority level, promoting required tasks within ties."""
-        # Required tasks bubble up within same priority level
-        return sorted(tasks, key=lambda t: (t.priority, not t.is_required))
-
-    def _filter_by_time(self, tasks: list[Task]) -> list[Task]:
-        """Reorder tasks so owner-preferred time-of-day tasks appear first."""
-        preferences = self.owner.get_constraints().get("preferences", [])
-        if not preferences:
-            return tasks
-        # Preferred-time tasks come first, others follow
-        preferred = [t for t in tasks if t.preferred_time in preferences]
-        others = [t for t in tasks if t.preferred_time not in preferences]
-        return preferred + others

@@ -37,12 +37,24 @@
 **a. Constraints and priorities**
 
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
+
+    - Time: It uses the available time as the  maximum anything more is dropped.
+    - Priority: The priority is used to order and determine tasks
+    - Preference: Owner's preferred slots are considered first then the rest are filled. 
+
 - How did you decide which constraints mattered most?
+
+    Priority was considered the most important as it gives us the direct information on what the owners cares for most. The time is then next that is used for scheduling.
 
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+
+    Because we give priority as the most important the prioprity one task of more time is given first even if there are 2 tasks or more that can be done in lesser time with low priority. 
+
 - Why is that tradeoff reasonable for this scenario?
+
+    It is reasonable because tasks like food and walking are mandotory and are to be done at the right time compared to secondary tasks. Thus priority seems to be the best option to order from.
 
 ---
 
