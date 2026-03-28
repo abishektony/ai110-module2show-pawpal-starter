@@ -34,6 +34,32 @@ The scheduling logic lives in `scheduler.py`, separate from the data model in `p
 
 **Flexible filtering** — `filter_tasks()` accepts keyword-only arguments (`completed`, `pet_name`) so callers can filter by one or both independently. Passing `None` for either skips that filter.
 
+## Testing PawPal+
+
+### Initialize environment
+Install UV in global, a python library which is good for package management.
+    
+    uv init
+    uv sync
+
+### Run the tests
+
+    uv run -m pytest tests/test_pawpal.py
+
+### What the tests cover
+
+The test suite has 26 tests across five areas:
+
+| Area | What is verified |
+|---|---|
+| **Recurring tasks** | Daily and weekly tasks produce a new incomplete copy on completion; non-recurring and unknown recurrence values (`"monthly"`) return `None` and add no task |
+| **Sorting** | `sort_by_time()` orders tasks chronologically and pushes untimed tasks to the end; `_sort_by_priority()` places lower priority numbers first and promotes required tasks within ties |
+| **Conflict detection** | Same-slot tasks produce one warning listing all names; different slots and untimed tasks produce no warnings |
+| **Schedule building** | Greedy packing respects available time, skips tasks that don't fit, handles zero minutes and empty task lists, and applies owner preferences before fitting |
+| **Filtering** | `filter_tasks()` correctly narrows by completion status and pet name, independently or together |
+
+### Confidence Level: ⭐⭐⭐⭐
+
 ## Getting started
 
 ### Setup
