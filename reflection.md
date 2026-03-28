@@ -4,13 +4,31 @@
 
 **a. Initial design**
 
+    1. Owner/pet info: The user should be able to enter their and their pet's information like time and preference.
+    2. Add/edit pet care tasks: The suer should be able to add, remove nd edit the task according to their liking. 
+    3. Generate a daily schedule: The user should be able to use the data he entered to generate a daily plan on the constraints
+
 - Briefly describe your initial UML design.
+    
+    The design consists of 5 classes. An owner holds time constraits and has one or more pets. Each pet has their your set of tasks. The scheduler takes a owner and pet to create a dailyplan as output.
+
 - What classes did you include, and what responsibilities did you assign to each?
+
+  * Owner: Stores the name, time, preferences and has one or more pets
+  * Pet: Stores the name, species and all the tasks
+  * Task: Has a single task with name, duration, priority and optional time of dat
+  * Scheduler: Has pets and owner times and schedules things accordingly.
+  * DailyPlan: is the output object holds schedules and skipped tasks, total time used and reasoning behind it.
 
 **b. Design changes**
 
 - Did your design change during implementation?
+
+    yes
+
 - If yes, describe at least one change and why you made it.
+
+    I did not think about seperating the dailyplan from schedular as it helps to keep things more organized
 
 ---
 
