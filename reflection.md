@@ -63,12 +63,22 @@
 **a. How you used AI**
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+
+    I used AI for helping me to understand the code, write script for UML diagram, help with writng functions and test cases. I didn't use AI for debegging as much cause I had a really good plan from start.
+
 - What kinds of prompts or questions were most helpful?
+
+    I think prompts like "Help me to identify issues with code" is useful to find issues and prompts like "Help to solve thsi problem" are good to get code snippets.
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
+
+    The Ai was trying to add more tables in the planning phase where I had to suggest it to not make it complex unnessarily. 
+
 - How did you evaluate or verify what the AI suggested?
+
+    I tested all the work using tests and also manually checking some of the common cases uisng the UI.
 
 ---
 
@@ -77,12 +87,26 @@
 **a. What you tested**
 
 - What behaviors did you test?
+
+    - Recurrinf tasks
+    - Sorting
+    - Conflict detection
+    - Schedule building
+    - Filtering
+
 - Why were these tests important?
+
+    These are required to check if the scheduler works correctly as I designed and no task is being missed out. And to makes ure everything works as expected before they are published.
 
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
+
+    4/5
+
 - What edge cases would you test next if you had more time?
+
+    Maybe more tasks that focus on more niche edge cases like monthly recurrence and more.
 
 ---
 
@@ -92,10 +116,16 @@
 
 - What part of this project are you most satisfied with?
 
+I am pretty proud for this week's project as it came along a lot easier and I am satisfied with the result.
+
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
 
+I would probabily focus more on the UI aspects and find something new to enhance or extend the project's capabilities.
+
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+I learned that they are really good in created UML diagram and for test cases. As writing the correct test cases will help to find issues and move faster.

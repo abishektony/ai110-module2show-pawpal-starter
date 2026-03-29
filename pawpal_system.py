@@ -1,17 +1,28 @@
+from __future__ import annotations
+import json
 from dataclasses import dataclass, field
 from typing import Optional
+
+
+PRIORITY_LABELS = {1: "🔴 High", 2: "🟡 Medium", 3: "🟢 Low"}
+PRIORITY_MAP = {"High": 1, "Medium": 2, "Low": 3}
 
 
 @dataclass
 class Task:
     name: str
     duration_minutes: int
-    priority: int  # 1 = highest
+    priority: int  # 1 = High, 2 = Medium, 3 = Low
     preferred_time: Optional[str] = None  # e.g. "morning", "evening"
     time: Optional[str] = None  # e.g. "08:30" — used for chronological ordering
     is_required: bool = False
     completed: bool = False
     recurrence: Optional[str] = None  # "daily", "weekly", or None
+
+    @property
+    def priority_label(self) -> str:
+        """Return a human-readable, emoji-coded priority label."""
+        return PRIORITY_LABELS.get(self.priority, f"P{self.priority}")
 
     def mark_complete(self) -> None:
         """Mark this task as completed."""
@@ -21,7 +32,7 @@ class Task:
         """Return a readable summary of the task."""
         required_tag = " [required]" if self.is_required else ""
         time_tag = f" ({self.preferred_time})" if self.preferred_time else ""
-        return f"{self.name}{time_tag} — {self.duration_minutes} min, priority {self.priority}{required_tag}"
+        return f"{self.name}{time_tag} — {self.duration_minutes} min, {self.priority_label}{required_tag}"
 
 
 @dataclass
@@ -61,6 +72,62 @@ class Owner:
             "preferences": self.preferences,
         }
 
+    def save_to_json(self, path: str = "data.json") -> None:
+        """Persist the owner, their pets, and all tasks to a JSON file."""
+        data = {
+            "name": self.name,
+            "available_minutes": self.available_minutes,
+            "preferences": self.preferences,
+            "pets": [
+                {
+                    "name": pet.name,
+                    "species": pet.species,
+                    "tasks": [
+                        {
+                            "name": t.name,
+                            "duration_minutes": t.duration_minutes,
+                            "priority": t.priority,
+                            "preferred_time": t.preferred_time,
+                            "time": t.time,
+                            "is_required": t.is_required,
+                            "completed": t.completed,
+                            "recurrence": t.recurrence,
+                        }
+                        for t in pet.tasks
+                    ],
+                }
+                for pet in self.pets
+            ],
+        }
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2)
+
+    @classmethod
+    def load_from_json(cls, path: str = "data.json") -> Owner:
+        """Load an Owner (with pets and tasks) from a JSON file."""
+        with open(path) as f:
+            data = json.load(f)
+        owner = cls(
+            name=data["name"],
+            available_minutes=data["available_minutes"],
+            preferences=data.get("preferences", []),
+        )
+        for pet_data in data.get("pets", []):
+            pet = Pet(name=pet_data["name"], species=pet_data["species"])
+            for t in pet_data.get("tasks", []):
+                pet.add_task(Task(
+                    name=t["name"],
+                    duration_minutes=t["duration_minutes"],
+                    priority=t["priority"],
+                    preferred_time=t.get("preferred_time"),
+                    time=t.get("time"),
+                    is_required=t.get("is_required", False),
+                    completed=t.get("completed", False),
+                    recurrence=t.get("recurrence"),
+                ))
+            owner.add_pet(pet)
+        return owner
+
 
 @dataclass
 class DailyPlan:
@@ -71,20 +138,38 @@ class DailyPlan:
 
     def display(self) -> str:
         """Format and return the full daily plan as a printable string."""
-        lines = ["=== Daily Plan ==="]
+        from tabulate import tabulate
+
+        lines = []
         if self.scheduled_tasks:
-            lines.append("\nScheduled:")
-            for task in self.scheduled_tasks:
-                lines.append(f"  - {task}")
-            lines.append(f"\nTotal time: {self.total_minutes} min")
+            rows = [
+                [
+                    t.priority_label,
+                    t.name,
+                    t.time or "—",
+                    f"{t.duration_minutes} min",
+                    "✓" if t.is_required else "",
+                    t.recurrence or "—",
+                ]
+                for t in self.scheduled_tasks
+            ]
+            lines.append(tabulate(
+                rows,
+                headers=["Priority", "Task", "Time", "Duration", "Required", "Recurrence"],
+                tablefmt="rounded_outline",
+            ))
+            lines.append(f"\n  Total: {self.total_minutes} min scheduled")
         else:
-            lines.append("No tasks scheduled.")
+            lines.append("  No tasks scheduled.")
 
         if self.skipped_tasks:
-            lines.append("\nSkipped (not enough time):")
-            for task in self.skipped_tasks:
-                lines.append(f"  - {task}")
+            skipped_rows = [
+                [t.priority_label, t.name, f"{t.duration_minutes} min"]
+                for t in self.skipped_tasks
+            ]
+            lines.append("\n  Skipped (not enough time):")
+            lines.append(tabulate(skipped_rows, headers=["Priority", "Task", "Duration"], tablefmt="simple"))
 
-        lines.append(f"\nReasoning: {self.reasoning}")
+        lines.append(f"\n  Reasoning: {self.reasoning}")
         return "\n".join(lines)
 

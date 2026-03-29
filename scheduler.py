@@ -13,8 +13,11 @@ class Scheduler:
         constraints = self.owner.get_constraints()
         available = constraints["available_minutes"]
 
-        sorted_tasks = self._sort_by_priority(self.pet.tasks)
-        filtered_tasks = self._filter_by_time(sorted_tasks)
+        # Sort by time first (stable), then by priority — result is priority-ordered
+        # with chronological order preserved as a tiebreaker within each priority group
+        time_sorted = self.sort_by_time(self.pet.tasks)
+        priority_sorted = self._sort_by_priority(time_sorted)
+        filtered_tasks = self._filter_by_time(priority_sorted)
 
         scheduled = []
         skipped = []

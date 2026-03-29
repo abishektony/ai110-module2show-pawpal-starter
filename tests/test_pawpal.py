@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from pawpal_system import Task, Pet, Owner
+from pawpal_system import Task, Pet, Owner, PRIORITY_LABELS, PRIORITY_MAP
 from scheduler import Scheduler
 
 
@@ -254,3 +254,116 @@ def test_filter_tasks_by_pet_name_no_match():
     scheduler = make_scheduler(tasks=tasks)
     result = scheduler.filter_tasks(tasks, pet_name="Mittens")
     assert result == []
+
+
+# --- Priority labels ---
+
+def test_priority_label_high():
+    task = Task(name="Meds", duration_minutes=5, priority=PRIORITY_MAP["High"])
+    assert task.priority_label == PRIORITY_LABELS[1]
+    assert "High" in task.priority_label
+    assert "🔴" in task.priority_label
+
+
+def test_priority_label_medium():
+    task = Task(name="Walk", duration_minutes=30, priority=PRIORITY_MAP["Medium"])
+    assert task.priority_label == PRIORITY_LABELS[2]
+    assert "Medium" in task.priority_label
+    assert "🟡" in task.priority_label
+
+
+def test_priority_label_low():
+    task = Task(name="Bath", duration_minutes=20, priority=PRIORITY_MAP["Low"])
+    assert task.priority_label == PRIORITY_LABELS[3]
+    assert "Low" in task.priority_label
+    assert "🟢" in task.priority_label
+
+
+def test_priority_map_roundtrip():
+    for label, num in PRIORITY_MAP.items():
+        assert label in PRIORITY_LABELS[num]
+
+
+# --- Priority-then-time scheduling ---
+
+def test_schedule_orders_high_before_medium_before_low():
+    tasks = [
+        Task(name="Low Task",    duration_minutes=10, priority=3, time="07:00"),
+        Task(name="High Task",   duration_minutes=10, priority=1, time="09:00"),
+        Task(name="Medium Task", duration_minutes=10, priority=2, time="08:00"),
+    ]
+    scheduler = make_scheduler(available_minutes=60, tasks=tasks)
+    plan = scheduler.schedule()
+    names = [t.name for t in plan.scheduled_tasks]
+    assert names.index("High Task") < names.index("Medium Task")
+    assert names.index("Medium Task") < names.index("Low Task")
+
+
+def test_schedule_same_priority_ordered_by_time():
+    tasks = [
+        Task(name="Late High",  duration_minutes=10, priority=1, time="10:00"),
+        Task(name="Early High", duration_minutes=10, priority=1, time="07:00"),
+    ]
+    scheduler = make_scheduler(available_minutes=60, tasks=tasks)
+    plan = scheduler.schedule()
+    names = [t.name for t in plan.scheduled_tasks]
+    assert names.index("Early High") < names.index("Late High")
+
+
+# --- save_to_json / load_from_json ---
+
+def test_save_and_load_roundtrip(tmp_path):
+    path = str(tmp_path / "test_data.json")
+    owner = Owner(name="Sam", available_minutes=60, preferences=["morning"])
+    pet = Pet(name="Rex", species="Dog")
+    pet.add_task(Task(
+        name="Walk", duration_minutes=30, priority=1,
+        time="08:00", is_required=True, recurrence="daily",
+    ))
+    owner.add_pet(pet)
+
+    owner.save_to_json(path)
+    loaded = Owner.load_from_json(path)
+
+    assert loaded.name == "Sam"
+    assert loaded.available_minutes == 60
+    assert loaded.preferences == ["morning"]
+    assert len(loaded.pets) == 1
+    assert loaded.pets[0].name == "Rex"
+    assert len(loaded.pets[0].tasks) == 1
+
+    t = loaded.pets[0].tasks[0]
+    assert t.name == "Walk"
+    assert t.priority == 1
+    assert t.time == "08:00"
+    assert t.is_required is True
+    assert t.recurrence == "daily"
+    assert t.completed is False
+
+
+def test_load_preserves_completed_status(tmp_path):
+    path = str(tmp_path / "test_data.json")
+    owner = Owner(name="Alex", available_minutes=30)
+    pet = Pet(name="Buddy", species="Dog")
+    task = Task(name="Feeding", duration_minutes=10, priority=1)
+    task.mark_complete()
+    pet.add_task(task)
+    owner.add_pet(pet)
+
+    owner.save_to_json(path)
+    loaded = Owner.load_from_json(path)
+
+    assert loaded.pets[0].tasks[0].completed is True
+
+
+def test_load_preserves_priority_label(tmp_path):
+    path = str(tmp_path / "test_data.json")
+    owner = Owner(name="Alex", available_minutes=30)
+    pet = Pet(name="Buddy", species="Dog")
+    pet.add_task(Task(name="Play", duration_minutes=15, priority=PRIORITY_MAP["Medium"]))
+    owner.add_pet(pet)
+
+    owner.save_to_json(path)
+    loaded = Owner.load_from_json(path)
+
+    assert loaded.pets[0].tasks[0].priority_label == PRIORITY_LABELS[2]

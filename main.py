@@ -1,3 +1,7 @@
+import sys
+sys.stdout.reconfigure(encoding="utf-8")
+
+from tabulate import tabulate
 from pawpal_system import Owner, Pet, Task
 from scheduler import Scheduler
 
@@ -11,6 +15,7 @@ def main():
     whiskers = Pet(name="Whiskers", species="Cat")
 
     # --- Add Tasks OUT OF ORDER (intentionally scrambled times) ---
+    # priority: 1=High, 2=Medium, 3=Low
     buddy.add_task(Task(name="Fetch / Playtime", duration_minutes=20, priority=2, preferred_time="afternoon", time="14:00"))
     buddy.add_task(Task(name="Grooming",         duration_minutes=15, priority=3, preferred_time="evening",   time="18:30"))
     buddy.add_task(Task(name="Feeding",          duration_minutes=10, priority=1, preferred_time="morning",   time="07:00", is_required=True))
@@ -38,13 +43,17 @@ def main():
         print(plan.display())
         print()
 
-    # --- Test sort_by_time() ---
+    # --- Sort by priority first, then time ---
     print("=" * 40)
-    print("  BUDDY'S TASKS — sorted by time")
+    print("  BUDDY'S TASKS — by priority, then time")
     print("=" * 40)
     buddy_scheduler = Scheduler(owner=owner, pet=buddy)
-    for task in buddy_scheduler.sort_by_time(buddy.tasks):
-        print(f"  {task.time or 'no time':>5}  {task}")
+    priority_then_time = buddy_scheduler.sort_by_time(buddy_scheduler._sort_by_priority(buddy.tasks))
+    rows = [
+        [t.priority_label, t.name, t.time or "—", f"{t.duration_minutes} min", "✓" if t.is_required else ""]
+        for t in priority_then_time
+    ]
+    print(tabulate(rows, headers=["Priority", "Task", "Time", "Duration", "Required"], tablefmt="rounded_outline"))
     print()
 
     # --- Test filter_tasks(): incomplete tasks only ---
@@ -52,8 +61,8 @@ def main():
     print("  BUDDY'S TASKS — incomplete only")
     print("=" * 40)
     incomplete = buddy_scheduler.filter_tasks(buddy.tasks, completed=False)
-    for task in incomplete:
-        print(f"  {task}")
+    rows = [[t.priority_label, t.name, t.time or "—"] for t in incomplete]
+    print(tabulate(rows, headers=["Priority", "Task", "Time"], tablefmt="simple"))
     print()
 
     # --- Mark one task complete, then filter again ---

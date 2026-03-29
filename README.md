@@ -36,12 +36,6 @@ The scheduling logic lives in `scheduler.py`, separate from the data model in `p
 
 ## Testing PawPal+
 
-### Initialize environment
-Install UV in global, a python library which is good for package management.
-    
-    uv init
-    uv sync
-
 ### Run the tests
 
     uv run -m pytest tests/test_pawpal.py
@@ -64,11 +58,28 @@ The test suite has 26 tests across five areas:
 
 ### Setup
 
+Install UV in global, a python library which is good for package management.
+    
+    uv init
+    uv sync
+
+Or the standard version
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+### Run the demo
+
+    uv run python main.py
+
+This creates one owner, three pets (Buddy, Whiskers, Luna, Rex), and several tasks, then demonstrates scheduling, chronological sorting, filtering, conflict detection, and recurring task completion.
+
+### Run the Streamlit app
+
+    uv run streamlit run app.py
 
 ### Suggested workflow
 
